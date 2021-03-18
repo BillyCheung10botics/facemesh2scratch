@@ -25,6 +25,11 @@ const Message = {
     'ja-Hira': 'ビデオを [VIDEO_STATE] にする',
     'en': 'turn video [VIDEO_STATE]'
   },
+  chooseCamera: {
+    'ja': 'choose camera [CAMERA_CHOICE]',
+    'ja-Hira': 'choose camera [CAMERA_CHOICE]',
+    'en': 'choose camera [CAMERA_CHOICE]'
+  },
   setRatio: {
     'ja': '倍率を [RATIO] にする',
     'ja-Hira': 'ばいりつを [RATIO] にする',
@@ -138,11 +143,23 @@ class Scratch3Facemesh2ScratchBlocks {
       ]
     }
 
+    get CAMERA_MENU() {
+      let camera_menu = [];
+      let cn = this.videoSelect.childNodes
+      for (let i = 0; i < cn.length; i++) {
+        if (c[i].nodeName === "OPTION"){
+          camera_menu.push({text: cn[i].text, value: cn[i].text})
+        }
+      }
+      return camera_menu;
+    }
+
     constructor (runtime) {
         this.runtime = runtime;
 
         this.faces = [];
-
+        let videoSelect = document.createElement('select');
+        this.videoSelect = videoSelect;
         let video = document.createElement("video");
         video.width = 480;
         video.height = 360;
@@ -168,14 +185,63 @@ class Scratch3Facemesh2ScratchBlocks {
           });
         });
 
-        let media = navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: false
-        });
-
-        media.then((stream) => {
+        // inserted ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        this.videoSelect.onchange = getStream;
+        
+        getStream().then(getDevices).then(gotDevices);
+        
+        function getDevices() {
+            // AFAICT in Safari this only gets default devices until gUM is called :/
+            return navigator.mediaDevices.enumerateDevices();
+        }
+        
+        function gotDevices(deviceInfos) {
+            console.log('Available input and output devices:', deviceInfos);
+            for (const deviceInfo of deviceInfos) {
+                const option = document.createElement('option');
+                option.value = deviceInfo.deviceId;
+                if (deviceInfo.kind === 'videoinput') {
+                    option.text = deviceInfo.label || `Camera ${this.videoSelect.length + 1}`;
+                    this.videoSelect.appendChild(option);
+                }
+            }
+        }
+        
+        function getStream() {
+            if (window.stream) {
+                window.stream.getTracks().forEach(track => {
+                    track.stop();
+                });
+            }
+            const videoSource = this.videoSelect.value;
+            const constraints = {
+                audio: false,
+                video: {deviceId: videoSource ? {exact: videoSource} : undefined}
+            };
+            return navigator.mediaDevices.getUserMedia(constraints).
+                then(gotStream).catch(handleError);
+        }
+        
+        function gotStream(stream) {
+            this.videoSelect.selectedIndex = [...this.videoSelect.options].
+                findIndex(option => option.text === stream.getVideoTracks()[0].label);
             this.video.srcObject = stream;
-        });
+        }
+        
+        function handleError(error) {
+            console.error('Error: ', error);
+        }
+
+        // inserted ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        
+        // let media = navigator.mediaDevices.getUserMedia({
+        //   video: true,
+        //   audio: false
+        // });
+
+        // media.then((stream) => {
+        //     this.video.srcObject = stream;
+        // });
 
         this.runtime.ioDevices.video.enableVideo();
     }
@@ -249,7 +315,19 @@ class Scratch3Facemesh2ScratchBlocks {
                             defaultValue: '0.75'
                         }
                     }
-                }
+                },
+                {
+                    opcode: 'chooseCamera',
+                    blockType: BlockType.COMMAND,
+                    text: Message.chooseCamera[this._locale],
+                    arguments: {
+                        CAMERA_CHOICE: {
+                            type: ArgumentType.STRING,
+                            menu: 'cameraMenu',
+                            defaultValue: 'off'
+                        }
+                    }
+                },
             ],
             menus: {
               personNumberMenu: {
@@ -271,6 +349,10 @@ class Scratch3Facemesh2ScratchBlocks {
               intervalMenu: {
                 acceptReporters: true,
                 items: this.INTERVAL_MENU
+              },
+              cameraMenu: {
+                acceptReporters: true,
+                items: this.CAMERA_MENU
               }
             }
         };
@@ -314,6 +396,11 @@ class Scratch3Facemesh2ScratchBlocks {
         this.runtime.ioDevices.video.enableVideo();
         this.runtime.ioDevices.video.mirror = state === "on";
       }
+    }
+
+    chooseCamera (args) {
+      let selected = args.CAMERA_CHOICE;
+      this.videoSelect.value = selected
     }
 
     setRatio (args) {
