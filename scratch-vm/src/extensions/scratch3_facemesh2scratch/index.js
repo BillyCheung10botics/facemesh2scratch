@@ -63,6 +63,8 @@ const Message = {
 }
 const AvailableLocales = ['en', 'ja', 'ja-Hira'];
 
+var camera_list = []
+
 class Scratch3Facemesh2ScratchBlocks {
     get PERSON_NUMBER_MENU () {
       let person_number_menu = []
@@ -143,23 +145,12 @@ class Scratch3Facemesh2ScratchBlocks {
       ]
     }
 
-    get CAMERA_MENU() {
-      let camera_menu = [];
-      let cn = this.videoSelect.childNodes
-      for (let i = 0; i < cn.length; i++) {
-        if (c[i].nodeName === "OPTION"){
-          camera_menu.push({text: cn[i].text, value: cn[i].text})
-        }
-      }
-      return camera_menu;
-    }
+    
 
     constructor (runtime) {
         this.runtime = runtime;
-
         this.faces = [];
-        let videoSelect = document.createElement('select');
-        this.videoSelect = videoSelect;
+        
         let video = document.createElement("video");
         video.width = 480;
         video.height = 360;
@@ -185,66 +176,86 @@ class Scratch3Facemesh2ScratchBlocks {
           });
         });
 
-        // inserted ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        this.videoSelect.onchange = getStream;
-        
-        getStream().then(getDevices).then(gotDevices);
-        
-        function getDevices() {
-            // AFAICT in Safari this only gets default devices until gUM is called :/
-            return navigator.mediaDevices.enumerateDevices();
-        }
-        
-        function gotDevices(deviceInfos) {
-            console.log('Available input and output devices:', deviceInfos);
-            for (const deviceInfo of deviceInfos) {
-                const option = document.createElement('option');
-                option.value = deviceInfo.deviceId;
-                if (deviceInfo.kind === 'videoinput') {
-                    option.text = deviceInfo.label || `Camera ${this.videoSelect.length + 1}`;
-                    this.videoSelect.appendChild(option);
-                }
-            }
-        }
-        
-        function getStream() {
-            if (window.stream) {
-                window.stream.getTracks().forEach(track => {
-                    track.stop();
-                });
-            }
-            const videoSource = this.videoSelect.value;
-            const constraints = {
-                audio: false,
-                video: {deviceId: videoSource ? {exact: videoSource} : undefined}
-            };
-            return navigator.mediaDevices.getUserMedia(constraints).
-                then(gotStream).catch(handleError);
-        }
-        
-        function gotStream(stream) {
-            this.videoSelect.selectedIndex = [...this.videoSelect.options].
-                findIndex(option => option.text === stream.getVideoTracks()[0].label);
+        let media = navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false
+        });
+
+        media.then((stream) => {
             this.video.srcObject = stream;
-        }
-        
-        function handleError(error) {
-            console.error('Error: ', error);
-        }
+        });
 
-        // inserted ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        
-        // let media = navigator.mediaDevices.getUserMedia({
-        //   video: true,
-        //   audio: false
-        // });
+        // // inserted ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+        let videoSelect = document.createElement('select');
+        this.videoSelect = videoSelect;
 
-        // media.then((stream) => {
-        //     this.video.srcObject = stream;
-        // });
-
+        this.getStream().then(this.getDevices).then((deviceinfos) => {this.gotDevices(deviceinfos);this.getCameraList(deviceinfos);});
+        // // inserted ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
         this.runtime.ioDevices.video.enableVideo();
     }
+
+
+    // inserted ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    getDevices() {
+        return navigator.mediaDevices.enumerateDevices();
+    }
+    
+    gotDevices(deviceInfos) {
+        console.log('Available input and output devices:', deviceInfos);
+        for (const deviceInfo of deviceInfos) {
+            if (deviceInfo.kind === 'videoinput') {
+                const option = document.createElement('option');
+                option.value = deviceInfo.deviceId;
+                option.text = deviceInfo.label || `Camera ${this.videoSelect.length + 1}`;
+                this.videoSelect.add(option);
+            }
+        }
+    }
+    
+    getCameraList(deviceInfos) {
+        camera_list = []
+        for (const deviceInfo of deviceInfos) {
+            if (deviceInfo.kind === 'videoinput') {
+                camera_list.push({
+                                       text: deviceInfo.label || `Camera ${this.videoSelect.length + 1}`, 
+                                       value: deviceInfo.deviceId
+                                      })
+            }
+        }
+        console.log(camera_list)
+
+    }
+
+    getStream() {
+        if (window.stream) {
+            window.stream.getTracks().forEach(track => {
+                track.stop();
+            });
+        }
+        const videoSource = this.videoSelect.value;
+        
+        const constraints = {
+            audio: false,
+            video: {
+                    width: {ideal: 640},
+                    height: {ideal: 480},  
+                    deviceId: videoSource ? {exact: videoSource} : undefined
+                    }
+        };
+        return navigator.mediaDevices.getUserMedia(constraints).
+            then((stream) => this.gotStream(stream) ).catch(this.handleError);
+    }
+    
+    gotStream(stream) {
+        this.videoSelect.selectedIndex = [...this.videoSelect.options].
+            findIndex(option => option.text === stream.getVideoTracks()[0].label);
+    }
+    
+    handleError(error) {
+        console.error('Error: ', error);
+    }
+
+    // inserted ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     getInfo () {
         this._locale = this.setLocale();
@@ -324,10 +335,11 @@ class Scratch3Facemesh2ScratchBlocks {
                         CAMERA_CHOICE: {
                             type: ArgumentType.STRING,
                             menu: 'cameraMenu',
-                            defaultValue: 'off'
+                            defaultValue: 'Default'
                         }
                     }
                 },
+
             ],
             menus: {
               personNumberMenu: {
@@ -352,10 +364,25 @@ class Scratch3Facemesh2ScratchBlocks {
               },
               cameraMenu: {
                 acceptReporters: true,
-                items: this.CAMERA_MENU
+                items: "getCameraMenu"
               }
             }
         };
+    }
+
+    
+
+    getCameraMenu() {
+      let camera_menu = [];
+      if (camera_list.length === 0){
+        return ["Default"]
+      } else{
+        for (let i = 0; i < camera_list.length; i++) {
+          var d = new Date()
+          camera_menu.push({text:  camera_list[i].text, value: camera_list[i].value});
+        }
+        return camera_menu;
+      }
     }
 
     getX (args) {
@@ -397,10 +424,35 @@ class Scratch3Facemesh2ScratchBlocks {
         this.runtime.ioDevices.video.mirror = state === "on";
       }
     }
-
+    
     chooseCamera (args) {
+
       let selected = args.CAMERA_CHOICE;
-      this.videoSelect.value = selected
+      console.log(selected)
+      if (selected === "Default") {
+        this.videoSelect.value = camera_list[0].value
+      } else {
+        this.videoSelect.value = selected
+      }
+      console.log(this.videoSelect.value)
+      const videoSource = this.videoSelect.value
+      const constraints = {
+          audio: false,
+          video: {
+                  width: {ideal: 640},
+                  height: {ideal: 480},  
+                  deviceId: videoSource ? {exact: videoSource} : undefined
+                  }
+      };
+      this.runtime.ioDevices.video.provider.switchVideo(this.videoSelect.value);
+      let media = navigator.mediaDevices.getUserMedia(constraints)
+      media.then((stream) => {
+          this.runtime.ioDevices.video.provider._video.srcObject = stream;
+          this.runtime.ioDevices.video.provider._video.play(); // Needed for Safari/Firefox, Chrome auto-plays.
+          this.runtime.ioDevices.video.provider._track = stream.getTracks()[0];
+          this.runtime.ioDevices.video.provider.enabled = true;
+          this.video.srcObject = this.runtime.ioDevices.video.provider._video.srcObject
+      });
     }
 
     setRatio (args) {

@@ -66,7 +66,7 @@ Chrome の拡張機能を使用している場合に、正常に動作しない�
 2. In scratch-gui folder, clone Facemesh2Scratch. You will have facemesh2scratch folder under scratch-gui.
 
   ```
-  % git clone git@github.com:champierre/facemesh2scratch.git
+  % git clone https://github.com/BillyCheung10botics/facemesh2scratch.git
   ```
 
 3. Run the install script.
