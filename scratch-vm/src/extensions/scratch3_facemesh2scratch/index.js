@@ -185,17 +185,13 @@ class Scratch3Facemesh2ScratchBlocks {
             this.video.srcObject = stream;
         });
 
-        // // inserted ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         let videoSelect = document.createElement('select');
         this.videoSelect = videoSelect;
-
         this.getStream().then(this.getDevices).then((deviceinfos) => {this.gotDevices(deviceinfos);this.getCameraList(deviceinfos);});
-        // // inserted ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+      
         this.runtime.ioDevices.video.enableVideo();
     }
 
-
-    // inserted ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     getDevices() {
         return navigator.mediaDevices.enumerateDevices();
     }
@@ -222,8 +218,6 @@ class Scratch3Facemesh2ScratchBlocks {
                                       })
             }
         }
-        console.log(camera_list)
-
     }
 
     getStream() {
