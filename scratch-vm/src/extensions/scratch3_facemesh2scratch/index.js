@@ -422,13 +422,11 @@ class Scratch3Facemesh2ScratchBlocks {
     chooseCamera (args) {
 
       let selected = args.CAMERA_CHOICE;
-      console.log(selected)
       if (selected === "Default") {
         this.videoSelect.value = camera_list[0].value
       } else {
         this.videoSelect.value = selected
       }
-      console.log(this.videoSelect.value)
       const videoSource = this.videoSelect.value
       const constraints = {
           audio: false,
