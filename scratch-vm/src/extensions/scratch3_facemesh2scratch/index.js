@@ -249,8 +249,6 @@ class Scratch3Facemesh2ScratchBlocks {
         console.error('Error: ', error);
     }
 
-    // inserted ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
     getInfo () {
         this._locale = this.setLocale();
 
@@ -423,11 +421,11 @@ class Scratch3Facemesh2ScratchBlocks {
 
       let selected = args.CAMERA_CHOICE;
       if (selected === "Default") {
-        this.videoSelect.value = camera_list[0].value
+        this.videoSelect.value = camera_list[0].value;
       } else {
-        this.videoSelect.value = selected
+        this.videoSelect.value = selected;
       }
-      const videoSource = this.videoSelect.value
+      const videoSource = this.videoSelect.value;
       const constraints = {
           audio: false,
           video: {
@@ -436,14 +434,13 @@ class Scratch3Facemesh2ScratchBlocks {
                   deviceId: videoSource ? {exact: videoSource} : undefined
                   }
       };
-      this.runtime.ioDevices.video.provider.switchVideo(this.videoSelect.value);
-      let media = navigator.mediaDevices.getUserMedia(constraints)
+      let media = navigator.mediaDevices.getUserMedia(constraints);
       media.then((stream) => {
           this.runtime.ioDevices.video.provider._video.srcObject = stream;
           this.runtime.ioDevices.video.provider._video.play(); // Needed for Safari/Firefox, Chrome auto-plays.
           this.runtime.ioDevices.video.provider._track = stream.getTracks()[0];
           this.runtime.ioDevices.video.provider.enabled = true;
-          this.video.srcObject = this.runtime.ioDevices.video.provider._video.srcObject
+          this.video.srcObject = this.runtime.ioDevices.video.provider._video.srcObject;
       });
     }
 
