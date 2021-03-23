@@ -183,12 +183,13 @@ class Scratch3Facemesh2ScratchBlocks {
 
         media.then((stream) => {
             this.video.srcObject = stream;
+            this.video.play();
         });
 
         let videoSelect = document.createElement('select');
         this.videoSelect = videoSelect;
         this.getStream().then(this.getDevices).then((deviceinfos) => {this.gotDevices(deviceinfos);this.getCameraList(deviceinfos);});
-      
+        
         this.runtime.ioDevices.video.enableVideo();
     }
 
