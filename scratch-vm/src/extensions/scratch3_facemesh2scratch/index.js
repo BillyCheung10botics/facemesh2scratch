@@ -156,6 +156,8 @@ class Scratch3Facemesh2ScratchBlocks {
         video.height = 360;
         video.autoplay = true;
         video.style.display = "none";
+        let plnode = document.createAttribute("playsinline");
+        video.setAttributeNode(plnode);  // Needed for safari in iphone
         this.video = video;
         this.ratio = 0.75;
 
@@ -437,6 +439,8 @@ class Scratch3Facemesh2ScratchBlocks {
       };
       let media = navigator.mediaDevices.getUserMedia(constraints);
       media.then((stream) => {
+          let plnode = document.createAttribute("playsinline");
+          this.runtime.ioDevices.video.provider._video.setAttributeNode(plnode); // Needed for safari in iphone
           this.runtime.ioDevices.video.provider._video.srcObject = stream;
           this.runtime.ioDevices.video.provider._video.play(); // Needed for Safari/Firefox, Chrome auto-plays.
           this.runtime.ioDevices.video.provider._track = stream.getTracks()[0];
